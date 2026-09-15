@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Ascensore Spaziale delle Equivalenze</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
+    color: #e8eef7;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 20px;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(2px 2px at 20% 30%, #fff, transparent),
+      radial-gradient(1px 1px at 60% 70%, #fff, transparent),
+      radial-gradient(1px 1px at 80% 20%, #fff, transparent),
+      radial-gradient(2px 2px at 40% 80%, #fff, transparent),
+      radial-gradient(1px 1px at 10% 60%, #fff, transparent),
+      radial-gradient(1px 1px at 90% 50%, #fff, transparent),
+      radial-gradient(1px 1px at 35% 15%, #fff, transparent);
+    background-size: 200% 200%;
+    animation: twinkle 6s infinite alternate;
+    pointer-events: none;
+    z-index: 0;
+  }
+  @keyframes twinkle {
+    from { opacity: 0.4; }
+    to { opacity: 1; }
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 1000px;
+    background: rgba(20, 30, 50, 0.75);
+    border: 1px solid rgba(120, 180, 255, 0.3);
+    border-radius: 20px;
+    padding: 25px;
+    box-shadow: 0 0 40px rgba(80, 150, 255, 0.2), inset 0 0 30px rgba(80, 150, 255, 0.05);
+    backdrop-filter: blur(6px);
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 1.5rem;
+    margin-bottom: 5px;
+    background: linear-gradient(90deg, #6ec6ff, #b388ff, #ff8ac0);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    letter-spacing: 1px;
+  }
+  .subtitle {
+    text-align: center;
+    font-size: 0.85rem;
+    color: #9ab0cc;
+    margin-bottom: 20px;
+  }
+
+  .category-bar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .category-bar button {
+    padding: 10px 20px;
+    border-radius: 30px;
+    border: 1px solid rgba(120, 180, 255, 0.4);
+    background: rgba(30, 45, 70, 0.8);
+    color: #cfe2ff;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.25s;
+  }
+  .category-bar button:hover {
+    background: rgba(60, 100, 160, 0.8);
+    transform: translateY(-2px);
+  }
+  .category-bar button.active {
+    background: linear-gradient(90deg, #3a7bd5, #00d2ff);
+    color: #fff;
+    border-color: #6ec6ff;
+    box-shadow: 0 0 15px rgba(0, 210, 255, 0.5);
+  }
+
+  /* Pannello info grandezza */
+  .dim-info {
+    text-align: center;
+    font-size: 0.85rem;
+    color: #ffd54f;
+    background: rgba(255, 213, 79, 0.08);
+    border: 1px dashed rgba(255, 213, 79, 0.4);
+    border-radius: 10px;
+    padding: 8px 15px;
+    margin-bottom: 15px;
+  }
+
+  .simulator {
+    display: flex;
+    gap: 20px;
+    align-items: stretch;
+  }
+
+  /* --- Colonna piani --- */
+  .elevator-shaft {
+    flex: 1.1;
+    position: relative;
+    background: linear-gradient(180deg, rgba(10,20,40,0.9), rgba(10,20,40,0.5));
+    border: 2px solid rgba(120, 180, 255, 0.4);
+    border-radius: 15px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-height: 480px;
+  }
+
+  .floor {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 12px;
+    border-radius: 10px;
+    background: rgba(30, 45, 70, 0.6);
+    border: 1px solid rgba(90, 130, 200, 0.2);
+    border-left: 4px solid transparent;
+    transition: all 0.3s;
+    cursor: pointer;
+    font-size: 0.85rem;
+    position: relative;
+  }
+  .floor:hover {
+    background: rgba(60, 100, 160, 0.6);
+    transform: translateX(3px);
+  }
+  .floor.departure {
+    border-left-color: #ffd54f;
+    background: linear-gradient(90deg, rgba(255,213,79,0.15), rgba(30,45,70,0.6));
+  }
+  .floor.arrival {
+    border-left-color: #6effa0;
+    background: linear-gradient(90deg, rgba(110,255,160,0.15), rgba(30,45,70,0.6));
+  }
+  .floor.both {
+    border-left-color: #ff8ac0;
+    background: linear-gradient(90deg, rgba(255,138,192,0.2), rgba(30,45,70,0.6));
+  }
+  .floor .floor-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .floor .unit-name {
+    font-weight: 600;
+    color: #cfe2ff;
+    font-size: 0.85rem;
+  }
+  .floor .unit-symbol {
+    font-size: 0.72rem;
+    color: #8aa8cc;
+    font-family: monospace;
+  }
+  .floor .exp {
+    font-size: 0.72rem;
+    color: #ffb86c;
+    font-family: monospace;
+    text-align: right;
+    line-height: 1.3;
+  }
+  .floor .exp small {
+    color: #ff8ac0;
+    font-size: 0.65rem;
+    display: block;
+  }
+
+  /* --- Cabina --- */
+  .cabin-track {
+    position: relative;
+    width: 70px;
+    background: rgba(10, 20, 40, 0.7);
+    border: 2px solid rgba(120, 180, 255, 0.4);
+    border-radius: 15px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .cabin {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    background: linear-gradient(145deg, #ffd54f, #ff8f00);
+    box-shadow: 0 0 20px rgba(255, 200, 60, 0.7), inset 0 0 10px rgba(255,255,255,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    transition: top 0.7s cubic-bezier(0.4, 0.0, 0.2, 1);
+    z-index: 2;
+  }
+
+  /* --- Pannello controlli --- */
+  .controls {
+    flex: 1.4;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .value-box {
+    background: rgba(20, 30, 50, 0.8);
+    border: 1px solid rgba(120, 180, 255, 0.3);
+    border-radius: 12px;
+    padding: 14px;
+  }
+  .value-box > label {
+    display: block;
+    font-size: 0.78rem;
+    color: #9ab0cc;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .selectors {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 10px;
+    align-items: end;
+  }
+  .selector-group label {
+    display: block;
+    font-size: 0.7rem;
+    color: #9ab0cc;
+    margin-bottom: 4px;
+  }
+  .selector-group select {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(120, 180, 255, 0.4);
+    background: rgba(10, 20, 40, 0.9);
+    color: #cfe2ff;
+    font-size: 0.85rem;
+    cursor: pointer;
+    outline: none;
+  }
+  .selector-group select:focus {
+    border-color: #6ec6ff;
+    box-shadow: 0 0 10px rgba(110, 198, 255, 0.4);
+  }
+  .swap-btn {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(120, 180, 255, 0.4);
+    background: rgba(30, 45, 70, 0.8);
+    color: #cfe2ff;
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: all 0.2s;
+    margin-bottom: 1px;
+  }
+  .swap-btn:hover {
+    background: rgba(60, 100, 160, 0.8);
+    transform: rotate(180deg);
+  }
+
+  .input-row {
+    margin-top: 10px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .input-row label {
+    font-size: 0.75rem;
+    color: #9ab0cc;
+  }
+  .input-row input {
+    flex: 1;
+    padding: 10px 12px;
+    font-size: 1.1rem;
+    border-radius: 8px;
+    border: 1px solid rgba(120, 180, 255, 0.4);
+    background: rgba(10, 20, 40, 0.9);
+    color: #fff;
+    font-family: monospace;
+    outline: none;
+  }
+  .input-row input:focus {
+    border-color: #6ec6ff;
+    box-shadow: 0 0 10px rgba(110, 198, 255, 0.4);
+  }
+
+  .operation {
+    background: rgba(20, 30, 50, 0.8);
+    border: 1px solid rgba(120, 180, 255, 0.3);
+    border-radius: 12px;
+    padding: 14px;
+    text-align: center;
+  }
+  .operation .title {
+    font-size: 0.75rem;
+    color: #9ab0cc;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .operation .formula {
+    font-size: 1rem;
+    font-family: monospace;
+    color: #ffd54f;
+    word-break: break-all;
+    margin-bottom: 6px;
+  }
+  .operation .arrow {
+    color: #6ec6ff;
+    font-size: 1.1rem;
+    margin: 6px 0;
+    font-family: monospace;
+  }
+  .operation .result {
+    font-size: 1.25rem;
+    font-family: monospace;
+    color: #6effa0;
+    font-weight: bold;
+    word-break: break-all;
+  }
+
+  .info-note {
+    font-size: 0.78rem;
+    color: #9ab0cc;
+    padding: 10px 12px;
+    background: rgba(110, 198, 255, 0.05);
+    border-radius: 10px;
+    border-left: 3px solid #6ec6ff;
+    line-height: 1.5;
+  }
+  .info-note b { color: #cfe2ff; }
+
+  .quiz-btn {
+    padding: 12px;
+    border-radius: 12px;
+    border: none;
+    background: linear-gradient(90deg, #3a7bd5, #00d2ff);
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .quiz-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(0, 210, 255, 0.5);
+  }
+
+  /* Quiz */
+  .quiz-panel {
+    display: none;
+    background: rgba(20, 30, 50, 0.95);
+    border: 1px solid rgba(120, 180, 255, 0.4);
+    border-radius: 15px;
+    padding: 18px;
+  }
+  .quiz-panel.active { display: block; }
+  .quiz-question {
+    font-size: 1rem;
+    margin-bottom: 14px;
+    color: #cfe2ff;
+    text-align: center;
+  }
+  .quiz-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .quiz-options button {
+    padding: 11px;
+    border-radius: 10px;
+    border: 1px solid rgba(120, 180, 255, 0.4);
+    background: rgba(30, 45, 70, 0.8);
+    color: #cfe2ff;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: monospace;
+  }
+  .quiz-options button:hover:not(:disabled) {
+    background: rgba(60, 100, 160, 0.8);
+  }
+  .quiz-options button.correct {
+    background: linear-gradient(90deg, #2e7d32, #4caf50) !important;
+    border-color: #6effa0;
+  }
+  .quiz-options button.wrong {
+    background: linear-gradient(90deg, #b71c1c, #e53935) !important;
+    border-color: #ff6b6b;
+  }
+  .quiz-feedback {
+    margin-top: 12px;
+    text-align: center;
+    font-size: 0.9rem;
+    min-height: 22px;
+  }
+  .quiz-score {
+    text-align: center;
+    font-size: 0.8rem;
+    color: #9ab0cc;
+    margin-top: 10px;
+  }
+
+  @media (max-width: 760px) {
+    .simulator { flex-direction: column; }
+    .cabin-track { height: 50px; width: 100%; }
+    .cabin { top: 5px !important; left: auto; right: 5px; transform: none; }
+    .quiz-options { grid-template-columns: 1fr; }
+    .selectors { grid-template-columns: 1fr; }
+    .swap-btn { justify-self: center; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🚀 Ascensore Spaziale delle Equivalenze</h1>
+  <p class="subtitle">Lunghezze · Superfici · Volumi — scegli partenza e destinazione con i menu!</p>
+
+  <div class="category-bar" id="categoryBar"></div>
+  <div class="dim-info" id="dimInfo"></div>
+
+  <div class="simulator">
+    <div class="elevator-shaft" id="elevatorShaft"></div>
+    <div class="cabin-track">
+      <div class="cabin" id="cabin">🚀</div>
+    </div>
+
+    <div class="controls">
+      <div class="value-box">
+        <label>🎛️ Configura il viaggio</label>
+        <div class="selectors">
+          <div class="selector-group">
+            <label>Partenza</label>
+            <select id="fromSelect"></select>
+          </div>
+          <button class="swap-btn" id="swapBtn" title="Scambia partenza e destinazione">⇅</button>
+          <div class="selector-group">
+            <label>Destinazione</label>
+            <select id="toSelect"></select>
+          </div>
+        </div>
+        <div class="input-row">
+          <label>Valore:</label>
+          <input type="number" id="inputValue" value="1" step="any">
+        </div>
+      </div>
+
+      <div class="operation">
+        <div class="title">Conversione</div>
+        <div class="formula" id="formula">—</div>
+        <div class="arrow" id="arrow">—</div>
+        <div class="result" id="result">—</div>
+      </div>
+
+      <div class="info-note" id="infoNote"></div>
+
+      <button class="quiz-btn" id="quizBtn">🎯 Mettiti alla prova!</button>
+
+      <div class="quiz-panel" id="quizPanel">
+        <div class="quiz-question" id="quizQuestion">...</div>
+        <div class="quiz-options" id="quizOptions"></div>
+        <div class="quiz-feedback" id="quizFeedback"></div>
+        <div class="quiz-score" id="quizScore">Punteggio: 0 / 0</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   CONFIGURAZIONE
+   Ogni categoria ha:
+   - dimensione: 1 = lunghezza, 2 = superficie, 3 = volume
+   - units: elenco dal più grande al più piccolo
+   - Ogni step tra piani = 10^dimensione (10, 100, 1000)
+   ============================================================ */
+const CATEGORIES = {
+  lunghezza: {
+    name: '📏 Lunghezze',
+    dimension: 1,
+    dimLabel: 'Ogni gradino = ×10 o ÷10',
+    units: [
+      { sym: 'km',  name: 'chilometro' },
+      { sym: 'hm',  name: 'ettometro' },
+      { sym: 'dam', name: 'decametro' },
+      { sym: 'm',   name: 'metro' },
+      { sym: 'dm',  name: 'decimetro' },
+      { sym: 'cm',  name: 'centimetro' },
+      { sym: 'mm',  name: 'millimetro' },
+    ]
+  },
+  superficie: {
+    name: '🟦 Superfici',
+    dimension: 2,
+    dimLabel: 'Ogni gradino = ×100 o ÷100',
+    units: [
+      { sym: 'km²',  name: 'chilometro quadrato' },
+      { sym: 'hm²',  name: 'ettometro quadrato' },
+      { sym: 'dam²', name: 'decametro quadrato' },
+      { sym: 'm²',   name: 'metro quadrato' },
+      { sym: 'dm²',  name: 'decimetro quadrato' },
+      { sym: 'cm²',  name: 'centimetro quadrato' },
+      { sym: 'mm²',  name: 'millimetro quadrato' },
+    ]
+  },
+  volume: {
+    name: '🧊 Volumi',
+    dimension: 3,
+    dimLabel: 'Ogni gradino = ×1000 o ÷1000',
+    units: [
+      { sym: 'km³',  name: 'chilometro cubo' },
+      { sym: 'hm³',  name: 'ettometro cubo' },
+      { sym: 'dam³', name: 'decametro cubo' },
+      { sym: 'm³',   name: 'metro cubo' },
+      { sym: 'dm³',  name: 'decimetro cubo' },
+      { sym: 'cm³',  name: 'centimetro cubo' },
+      { sym: 'mm³',  name: 'millimetro cubo' },
+    ]
+  }
+};
+
+/* Nota: per volumi aggiungiamo anche l'equivalenza con i litri mostrata come nota */
+const VOLUME_NOTES = {
+  'dm³': '= 1 L',
+  'cm³': '= 1 mL',
+  'm³':  '= 1000 L'
+};
+
+/* ============================================================
+   STATO
+   ============================================================ */
+const state = {
+  category: 'lunghezza',
+  fromIndex: 3, // base (indice 3 = unità base)
+  toIndex: 3,
+  value: 1,
+  quizScore: 0,
+  quizTotal: 0
+};
+
+/* ============================================================
+   DOM
+   ============================================================ */
+const $ = (id) => document.getElementById(id);
+const categoryBar = $('categoryBar');
+const dimInfo = $('dimInfo');
+const elevatorShaft = $('elevatorShaft');
+const cabin = $('cabin');
+const fromSelect = $('fromSelect');
+const toSelect = $('toSelect');
+const swapBtn = $('swapBtn');
+const inputValue = $('inputValue');
+const formulaEl = $('formula');
+const resultEl = $('result');
+const arrowEl = $('arrow');
+const infoNote = $('infoNote');
+const quizBtn = $('quizBtn');
+const quizPanel = $('quizPanel');
+const quizQuestion = $('quizQuestion');
+const quizOptions = $('quizOptions');
+const quizFeedback = $('quizFeedback');
+const quizScore = $('quizScore');
+
+/* ============================================================
+   UTILITIES
+   ============================================================ */
+const getCat = () => CATEGORIES[state.category];
+const getUnits = () => getCat().units;
+const stepFactor = () => Math.pow(10, getCat().dimension);
+
+/** Formatta un numero in modo leggibile */
+function formatNumber(n) {
+  if (!isFinite(n)) return '∞';
+  if (n === 0) return '0';
+  const absN = Math.abs(n);
+  // Se numero intero ragionevole
+  if (Number.isInteger(n) && absN < 1e15) return n.toString();
+  // Se molto grande o molto piccolo, notazione esponenziale pulita
+  if (absN >= 1e15 || absN < 1e-6) {
+    return n.toExponential(4).replace(/\.?0+e/, 'e');
+  }
+  // Altrimenti, massimo 10 cifre significative, no zeri finali
+  let s = n.toPrecision(10);
+  if (s.includes('.')) s = s.replace(/\.?0+$/, '');
+  if (s.includes('e')) {
+    s = parseFloat(s).toExponential(4).replace(/\.?0+e/, 'e');
+  }
+  return s;
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function renderCategoryBar() {
+  categoryBar.innerHTML = '';
+  for (const key in CATEGORIES) {
+    const btn = document.createElement('button');
+    btn.textContent = CATEGORIES[key].name;
+    btn.className = key === state.category ? 'active' : '';
+    btn.onclick = () => {
+      state.category = key;
+      state.fromIndex = 3;
+      state.toIndex = 3;
+      renderCategoryBar();
+      renderShaft();
+      renderSelectors();
+      updateConversion();
+      updateInfoNote();
+      resetQuiz();
+    };
+    categoryBar.appendChild(btn);
+  }
+}
+
+function renderShaft() {
+  const units = getUnits();
+  const cat = getCat();
+  elevatorShaft.innerHTML = '';
+  units.forEach((u, i) => {
+    const floor = document.createElement('div');
+    floor.className = 'floor';
+    floor.dataset.index = i;
+
+    // Calcolo esponente visualizzato rispetto all'unità base (indice 3)
+    const relPos = 3 - i; // 3,2,1,0,-1,-2,-3
+    const dimension = cat.dimension;
+    const expValue = relPos * dimension;
+
+    // Formatta l'esponente
+    let expStr;
+    if (expValue === 0) expStr = '10⁰';
+    else if (expValue > 0) {
+      const sup = toSuperscript(expValue);
+      expStr = '10' + sup;
+    } else {
+      const sup = toSuperscript(-expValue);
+      expStr = '10⁻' + sup;
+    }
+
+    let noteHTML = '';
+    if (state.category === 'volume' && VOLUME_NOTES[u.sym]) {
+      noteHTML = `<small>${VOLUME_NOTES[u.sym]}</small>`;
+    }
+
+    floor.innerHTML = `
+      <div class="floor-info">
+        <span class="unit-name">${u.name}</span>
+        <span class="unit-symbol">${u.sym}</span>
+      </div>
+      <div class="exp">${expStr}${noteHTML}</div>
+    `;
+
+    // Click singolo: imposta come partenza
+    floor.onclick = () => {
+      state.fromIndex = i;
+      renderSelectors();
+      updateConversion();
+    };
+    // Doppio click: imposta come destinazione
+    floor.ondblclick = (e) => {
+      e.preventDefault();
+      state.toIndex = i;
+      renderSelectors();
+      updateConversion();
+    };
+
+    elevatorShaft.appendChild(floor);
+  });
+}
+
+function renderSelectors() {
+  const units = getUnits();
+  fromSelect.innerHTML = '';
+  toSelect.innerHTML = '';
+  units.forEach((u, i) => {
+    const opt1 = document.createElement('option');
+    opt1.value = i;
+    opt1.textContent = `${u.name} (${u.sym})`;
+    fromSelect.appendChild(opt1);
+
+    const opt2 = document.createElement('option');
+    opt2.value = i;
+    opt2.textContent = `${u.name} (${u.sym})`;
+    toSelect.appendChild(opt2);
+  });
+  fromSelect.value = state.fromIndex;
+  toSelect.value = state.toIndex;
+}
+
+function updateInfoNote() {
+  const cat = getCat();
+  const rules = {
+    lunghezza: 'Ogni gradino dell\'ascensore vale <b>×10</b> (scendendo) o <b>÷10</b> (salendo).',
+    superficie: 'Ogni gradino vale <b>×100</b> (scendendo) o <b>÷100</b> (salendo), perché la superficie è una grandezza al quadrato.',
+    volume: 'Ogni gradino vale <b>×1000</b> (scendendo) o <b>÷1000</b> (salendo), perché il volume è una grandezza al cubo.'
+  };
+  infoNote.innerHTML = `
+    💡 <b>${cat.name}</b><br>
+    ${rules[state.category]}<br>
+    • <b>Click</b> su un piano = imposta la <b>partenza</b> (bordo giallo)<br>
+    • <b>Doppio click</b> su un piano = imposta la <b>destinazione</b> (bordo verde)<br>
+    • Puoi anche usare i menu qui sopra ⬆️
+  `;
+}
+
+/** Converte un numero in apice unicode */
+function toSuperscript(n) {
+  const map = { '0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹' };
+  return String(n).split('').map(c => map[c] || c).join('');
+}
+
+/* ============================================================
+   CONVERSIONE
+   ============================================================ */
+function updateConversion() {
+  const units = getUnits();
+  const cat = getCat();
+  const from = units[state.fromIndex];
+  const to = units[state.toIndex];
+
+  // Evidenzia piani
+  document.querySelectorAll('.floor').forEach((el, i) => {
+    el.classList.remove('departure', 'arrival', 'both');
+    const isFrom = i === state.fromIndex;
+    const isTo = i === state.toIndex;
+    if (isFrom && isTo) el.classList.add('both');
+    else if (isFrom) el.classList.add('departure');
+    else if (isTo) el.classList.add('arrival');
+  });
+
+  // Posiziona cabina in base alla destinazione
+  const totalFloors = units.length;
+  const shaftHeight = elevatorShaft.clientHeight;
+  const cabinTop = (state.toIndex / (totalFloors - 1)) * (shaftHeight - 60) + 5;
+  cabin.style.top = cabinTop + 'px';
+
+  // Calcolo
+  const distance = state.toIndex - state.fromIndex;
+  const value = parseFloat(inputValue.value);
+  if (isNaN(value)) {
+    formulaEl.textContent = '—';
+    resultEl.textContent = 'inserisci un numero';
+    return;
+  }
+
+  const dimension = cat.dimension;
+  const expStep = distance * dimension; // esponente totale della potenza di 10
+
+  let result;
+  let formula;
+
+  if (distance === 0) {
+    result = value;
+    formula = `${formatNumber(value)} ${from.sym}`;
+    arrowEl.textContent = '⏸️ stesso piano';
+  } else {
+    const factor = Math.pow(10, Math.abs(expStep));
+    if (expStep > 0) {
+      result = value * factor;
+      formula = `${formatNumber(value)} ${from.sym} × 10^${expStep}`;
+      arrowEl.textContent = '⬇️ scendi di ' + distance + ' piani (×10^' + expStep + ')';
+    } else {
+      result = value / factor;
+      formula = `${formatNumber(value)} ${from.sym} ÷ 10^${-expStep}`;
+      arrowEl.textContent = '⬆️ sali di ' + (-distance) + ' piani (÷10^' + (-expStep) + ')';
+    }
+  }
+
+  formulaEl.textContent = formula;
+  resultEl.textContent = `= ${formatNumber(result)} ${to.sym}`;
+}
+
+/* ============================================================
+   SWAP
+   ============================================================ */
+swapBtn.onclick = () => {
+  const tmp = state.fromIndex;
+  state.fromIndex = state.toIndex;
+  state.toIndex = tmp;
+  renderSelectors();
+  updateConversion();
+};
+
+/* ============================================================
+   EVENTI
+   ============================================================ */
+fromSelect.onchange = () => {
+  state.fromIndex = parseInt(fromSelect.value);
+  updateConversion();
+};
+toSelect.onchange = () => {
+  state.toIndex = parseInt(toSelect.value);
+  updateConversion();
+};
+inputValue.oninput = updateConversion;
+
+/* ============================================================
+   QUIZ
+   ============================================================ */
+function resetQuiz() {
+  quizPanel.classList.remove('active');
+  quizFeedback.textContent = '';
+}
+
+function startQuiz() {
+  quizPanel.classList.add('active');
+  quizFeedback.textContent = '';
+  const units = getUnits();
+  const cat = getCat();
+
+  const fromIdx = Math.floor(Math.random() * units.length);
+  let toIdx = Math.floor(Math.random() * units.length);
+  while (toIdx === fromIdx) toIdx = Math.floor(Math.random() * units.length);
+
+  const from = units[fromIdx];
+  const to = units[toIdx];
+  const value = [1, 2, 5, 10, 0.5, 100, 3][Math.floor(Math.random() * 7)];
+
+  const distance = toIdx - fromIdx;
+  const expStep = distance * cat.dimension;
+  const correct = expStep > 0 ? value * Math.pow(10, expStep) : value / Math.pow(10, -expStep);
+
+  const correctStr = formatNumber(correct);
+  quizQuestion.innerHTML = `Quanto vale <b>${formatNumber(value)} ${from.sym}</b> in <b>${to.sym}</b>?`;
+
+  // Genera opzioni sbagliate plausibili: uso fattori 10, 100, 1000 vicini
+  const options = new Set();
+  options.add(correctStr);
+  const wrongMultipliers = [10, 0.1, 100, 0.01, 1000, 0.001, 2, 0.5];
+  wrongMultipliers.sort(() => Math.random() - 0.5);
+  for (const m of wrongMultipliers) {
+    if (options.size >= 4) break;
+    const w = correct * m;
+    if (isFinite(w) && w > 0 && w !== correct) options.add(formatNumber(w));
+  }
+  // fallback
+  let extra = 2;
+  while (options.size < 4) {
+    const w = correct * Math.pow(10, extra);
+    if (isFinite(w) && w !== correct) options.add(formatNumber(w));
+    extra++;
+  }
+
+  const opts = Array.from(options).sort(() => Math.random() - 0.5);
+
+  quizOptions.innerHTML = '';
+  opts.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.textContent = opt + ' ' + to.sym;
+    btn.onclick = () => checkAnswer(btn, opt, correctStr, to.sym);
+    quizOptions.appendChild(btn);
+  });
+}
+
+function checkAnswer(btn, chosen, correct, unitSym) {
+  document.querySelectorAll('.quiz-options button').forEach(b => b.disabled = true);
+  state.quizTotal++;
+
+  if (chosen === correct) {
+    btn.classList.add('correct');
+    quizFeedback.innerHTML = '✅ <span style="color:#6effa0">Perfetto! Risposta corretta.</span>';
+    state.quizScore++;
+  } else {
+    btn.classList.add('wrong');
+    document.querySelectorAll('.quiz-options button').forEach(b => {
+      if (b.textContent === correct + ' ' + unitSym) b.classList.add('correct');
+    });
+    quizFeedback.innerHTML = `❌ <span style="color:#ff8a80">Ops! La risposta corretta era <b>${correct} ${unitSym}</b>.</span>`;
+  }
+  quizScore.textContent = `Punteggio: ${state.quizScore} / ${state.quizTotal}`;
+}
+
+quizBtn.onclick = startQuiz;
+
+/* ============================================================
+   INIZIALIZZAZIONE
+   ============================================================ */
+function init() {
+  renderCategoryBar();
+  renderShaft();
+  renderSelectors();
+  updateInfoNote();
+  updateConversion();
+}
+
+window.addEventListener('load', () => {
+  init();
+  setTimeout(updateConversion, 100);
+});
+window.addEventListener('resize', updateConversion);
+</script>
+</body>
+</html>
